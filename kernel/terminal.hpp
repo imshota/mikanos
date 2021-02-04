@@ -35,7 +35,7 @@ class Terminal {
   static const int kRows = 15, kColumns = 60;
   static const int kLineMax = 128;
 
-  Terminal(Task& task, const TerminalDescriptor* term_desc);
+  Terminal(Task& task, const TerminalDescriptor* term_desc, bool expand);
   unsigned int LayerID() const { return layer_id_; }
   Rectangle<int> BlinkCursor();
   Rectangle<int> InputKey(uint8_t modifier, uint8_t keycode, char ascii);
@@ -45,6 +45,8 @@ class Terminal {
   Task& UnderlyingTask() const { return task_; }
   int LastExitCode() const { return last_exit_code_; }
   void Redraw();
+
+  void SetWindow(int x, int y);
 
  private:
   std::shared_ptr<ToplevelWindow> window_;

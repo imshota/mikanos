@@ -73,6 +73,8 @@ class Window {
   int Height() const;
   /** @brief 平面描画領域のサイズをピクセル単位で返す。 */
   Vector2D<int> Size() const;
+  /** @brief 平面描画領域のサイズを変更する。 */
+  void SetSize(int wide, int height);
 
   /** @brief このウィンドウの平面描画領域内で，矩形領域を移動する。
    *
@@ -81,8 +83,6 @@ class Window {
    * @param dst_pos   移動先の原点
    */
   void Move(Vector2D<int> dst_pos, const Rectangle<int>& src);
-
-  void SetSize(int wide, int height);
 
   virtual void Activate() {}
   virtual void Deactivate() {}

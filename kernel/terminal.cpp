@@ -237,7 +237,7 @@ fat::DirectoryEntry* FindCommand(const char* command,
 
 std::map<fat::DirectoryEntry*, AppLoadInfo>* app_loads;
 
-Terminal::Terminal(Task& task, const TerminalDescriptor* term_desc)
+Terminal::Terminal(Task& task, const TerminalDescriptor* term_desc, bool expand)
     : task_{task} {
   if (term_desc) {
     show_window_ = term_desc->show_window;
@@ -252,11 +252,20 @@ Terminal::Terminal(Task& task, const TerminalDescriptor* term_desc)
   }
 
   if (show_window_) {
-    window_ = std::make_shared<ToplevelWindow>(
+    if (expand) {
+      Terminal::
+      window_ = std::make_shared<ToplevelWindow>(
+        ScreenSize().x - 75, 
+        ScreenSize().y - 88,
+        screen_config.pixel_format,
+        "MikanTerm");
+    } else {
+      window_ = std::make_shared<ToplevelWindow>(
         kColumns * 8 + 8 + ToplevelWindow::kMarginX,
         kRows * 16 + 8 + ToplevelWindow::kMarginY,
         screen_config.pixel_format,
         "MikanTerm");
+    }
     DrawTerminal(*window_->InnerWriter(), {0, 0}, window_->InnerSize());
 
     layer_id_ = layer_manager->NewLayer()
@@ -666,6 +675,10 @@ void Terminal::Redraw() {
   __asm__("sti");
 }
 
+void Terminal::SetWindow(int x, int y) {
+  window_ = std::make_shared<ToplevelWindow>(x, y, screen_config.pixel_format, "MikanTerm");
+}
+
 Rectangle<int> Terminal::HistoryUpDown(int direction) {
   if (direction == -1 && cmd_history_index_ >= 0) {
     --cmd_history_index_;
@@ -701,7 +714,7 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
 
   __asm__("cli");
   Task& task = task_manager->CurrentTask();
-  Terminal* terminal = new Terminal{task, term_desc};
+  Terminal* terminal = new Terminal{task, term_desc, false};
   if (show_window) {
     layer_manager->Move(terminal->LayerID(), {100, 200});
     layer_task_map->insert(std::make_pair(terminal->LayerID(), task_id));
@@ -774,11 +787,116 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
       __asm__("cli");
       task_manager->Finish(terminal->LastExitCode());
       break;
+    case Message::kWindowExpand:
+      CloseLayer(msg->arg.window_close.layer_id);
+      task_manager->NewTask()
+        .InitContext(ExpandTaskTerminal, 0)
+        .Wakeup();
+      __asm__("cli");
+      task_manager->Finish(terminal->LastExitCode());
+      break;
     default:
       break;
     }
   }
 }
+
+void ExpandTaskTerminal(uint64_t task_id, int64_t data) {
+  const auto term_desc = reinterpret_cast<TerminalDescriptor*>(data);
+  bool show_window = true;
+  if (term_desc) {
+    show_window = term_desc->show_window;
+  }
+
+  __asm__("cli");
+  Task& task = task_manager->CurrentTask();
+  Terminal* terminal = new Terminal{task, term_desc, true};
+  if (show_window) {
+    layer_manager->Move(terminal->LayerID(), {0, 0});
+    layer_task_map->insert(std::make_pair(terminal->LayerID(), task_id));
+    active_layer->Activate(terminal->LayerID());
+  }
+  __asm__("sti");
+
+  if (term_desc && !term_desc->command_line.empty()) {
+    for (int i = 0; i < term_desc->command_line.length(); ++i) {
+      terminal->InputKey(0, 0, term_desc->command_line[i]);
+    }
+    terminal->InputKey(0, 0, '\n');
+  }
+
+  if (term_desc && term_desc->exit_after_command) {
+    delete term_desc;
+    __asm__("cli");
+    task_manager->Finish(terminal->LastExitCode());
+  }
+
+  auto add_blink_timer = [task_id](unsigned long t){
+    timer_manager->AddTimer(Timer{t + static_cast<int>(kTimerFreq * 0.5),
+                                  1, task_id});
+  };
+  add_blink_timer(timer_manager->CurrentTick());
+
+  bool window_isactive = false;
+
+  while (true) {
+    __asm__("cli");
+    auto msg = task.ReceiveMessage();
+    if (!msg) {
+      task.Sleep();
+      __asm__("sti");
+      continue;
+    }
+    __asm__("sti");
+
+    switch (msg->type) {
+    case Message::kTimerTimeout:
+      add_blink_timer(msg->arg.timer.timeout);
+      if (show_window && window_isactive) {
+        const auto area = terminal->BlinkCursor();
+        Message msg = MakeLayerMessage(
+            task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
+        __asm__("cli");
+        task_manager->SendMessage(1, msg);
+        __asm__("sti");
+      }
+      break;
+    case Message::kKeyPush:
+      if (msg->arg.keyboard.press) {
+        const auto area = terminal->InputKey(msg->arg.keyboard.modifier,
+                                             msg->arg.keyboard.keycode,
+                                             msg->arg.keyboard.ascii);
+        if (show_window) {
+          Message msg = MakeLayerMessage(
+              task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
+          __asm__("cli");
+          task_manager->SendMessage(1, msg);
+          __asm__("sti");
+        }
+      }
+      break;
+    case Message::kWindowActive:
+      window_isactive = msg->arg.window_active.activate;
+      break;
+    case Message::kWindowClose:
+      CloseLayer(msg->arg.window_close.layer_id);
+      __asm__("cli");
+      task_manager->Finish(terminal->LastExitCode());
+      break;
+    case Message::kWindowExpand:
+      CloseLayer(msg->arg.window_close.layer_id);
+      task_manager->NewTask()
+        .InitContext(ExpandTaskTerminal, 0)
+        .Wakeup();
+      __asm__("cli");
+      task_manager->Finish(terminal->LastExitCode());
+      break;
+    default:
+      break;
+    }
+  }
+}
+
 
 TerminalFileDescriptor::TerminalFileDescriptor(Terminal& term)
     : term_{term} {

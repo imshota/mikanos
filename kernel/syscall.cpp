@@ -266,6 +266,10 @@ SYSCALL(ReadEvent) {
       app_events[i].type = AppEvent::kQuit;
       ++i;
       break;
+    case Message::kWindowExpand:
+      app_events[i].type = AppEvent::kQuit;
+      ++i;
+      break;
     default:
       Log(kInfo, "uncaught event type: %u\n", msg->type);
     }
