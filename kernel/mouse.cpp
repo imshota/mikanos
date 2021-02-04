@@ -97,7 +97,14 @@ namespace {
   }
 
   void SendExpandMessage() {
+    const auto [ layer, task_id ] = FindActiveLayerTask();
+    if (!layer || !task_id) {
+      return;
+    }
 
+    Message msg{Message::kWindowExpand};
+    msg.arg.window_expand.layer_id = layer->ID();
+    task_manager->SendMessage(task_id, msg);
   }
 }
 
@@ -176,7 +183,7 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
     if (expand_layer_id == 0) {
       SendMouseMessage(newpos, posdiff, buttons, previous_buttons_);
     } else {
-      SendCloseMessage();
+      SendExpandMessage();
     }
   }
 

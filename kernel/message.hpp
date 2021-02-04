@@ -16,6 +16,7 @@ struct Message {
     kWindowActive,
     kPipe,
     kWindowClose,
+    kWindowExpand,
   } type;
 
   uint64_t src_task;
@@ -64,5 +65,9 @@ struct Message {
     struct {
       unsigned int layer_id;
     } window_close;
+
+    struct {
+      unsigned int layer_id;
+    } window_expand;
   } arg;
 };

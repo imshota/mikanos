@@ -53,6 +53,7 @@ int printk(const char* format, ...) {
 
 std::shared_ptr<ToplevelWindow> main_window;
 unsigned int main_window_layer_id;
+
 void InitializeMainWindow() {
   main_window = std::make_shared<ToplevelWindow>(
       160, 52, screen_config.pixel_format, "Hello Window");
@@ -128,7 +129,7 @@ extern "C" void KernelMainNewStack(
   InitializeGraphics(frame_buffer_config_ref);
   InitializeConsole();
 
-  printk("Welcome to MikanOS!\n");
+  printk("Welcome to MyMikanOS!\n");
   SetLogLevel(kWarn);
 
   InitializeSegmentation();
