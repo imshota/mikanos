@@ -75,6 +75,7 @@ class Terminal {
 };
 
 void TaskTerminal(uint64_t task_id, int64_t data);
+void ExpandTaskTerminal(uint64_t task_id, int64_t data);
 
 class TerminalFileDescriptor : public FileDescriptor {
  public:

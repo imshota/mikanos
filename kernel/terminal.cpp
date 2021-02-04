@@ -774,11 +774,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
       __asm__("cli");
       task_manager->Finish(terminal->LastExitCode());
       break;
-    case Message::kWindowExpand:
-      CloseLayer(msg->arg.window_expand.layer_id);
-      __asm__("cli");
-      task_manager->Finish(terminal->LastExitCode());
-      break;
     default:
       break;
     }

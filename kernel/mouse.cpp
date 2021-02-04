@@ -95,17 +95,6 @@ namespace {
     msg.arg.window_close.layer_id = layer->ID();
     task_manager->SendMessage(task_id, msg);
   }
-
-  void SendExpandMessage() {
-    const auto [ layer, task_id ] = FindActiveLayerTask();
-    if (!layer || !task_id) {
-      return;
-    }
-
-    Message msg{Message::kWindowExpand};
-    msg.arg.window_expand.layer_id = layer->ID();
-    task_manager->SendMessage(task_id, msg);
-  }
 }
 
 void DrawMouseCursor(PixelWriter* pixel_writer, Vector2D<int> position) {
@@ -183,7 +172,13 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
     if (expand_layer_id == 0) {
       SendMouseMessage(newpos, posdiff, buttons, previous_buttons_);
     } else {
-      SendExpandMessage();
+      
+      auto layer = layer_manager->FindLayerByPosition(position_, layer_id_);
+      auto win = layer->GetWindow();
+      //win->SetSize(ScreenSize().x, ScreenSize().y);
+      //win->SetSize(300, 300);
+      layer_manager->Move(expand_layer_id, {0,0});
+      //layer_manager->Draw(expand_layer_id);
     }
   }
 

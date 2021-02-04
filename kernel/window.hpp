@@ -82,6 +82,8 @@ class Window {
    */
   void Move(Vector2D<int> dst_pos, const Rectangle<int>& src);
 
+  void SetSize(int wide, int height);
+
   virtual void Activate() {}
   virtual void Deactivate() {}
   virtual WindowRegion GetWindowRegion(Vector2D<int> pos);
