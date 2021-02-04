@@ -41,6 +41,25 @@ namespace {
     ".$$$$$$$$$$$$$$@",
     "@@@@@@@@@@@@@@@@",
   };
+
+  const int kExpandButtonWidth = 16;
+  const int kExpandButtonHeight = 14;
+  const char expand_button[kExpandButtonHeight][kExpandButtonWidth + 1] = {
+    "...............@",
+    ".:@@@@@@@@@@@:$@",
+    ".:@:::::::::@:$@",
+    ".:@:::::::::@:$@",
+    ".:@:::::::::@:$@",
+    ".:@:::::::::@:$@",
+    ".:@:::::::::@:$@",
+    ".:@:::::::::@:$@",
+    ".:@:::::::::@:$@",
+    ".:@:::::::::@:$@",
+    ".:@@@@@@@@@@@:$@",
+    ".:::::::::::::$@",
+    ".$$$$$$$$$$$$$$@",
+    "@@@@@@@@@@@@@@@@",
+  };
 }
 
 Window::Window(int width, int height, PixelFormat shadow_format) : width_{width}, height_{height} {
@@ -194,7 +213,21 @@ void DrawWindowTitle(PixelWriter& writer, const char* title, bool active) {
   }
 
   FillRectangle(writer, {3, 3}, {win_w - 6, 18}, ToColor(bgcolor));
-  WriteString(writer, {24, 4}, title, ToColor(0xffffff));
+  WriteString(writer, {14, 4}, title, ToColor(0xffffff));
+
+  for (int y = 0; y < kExpandButtonHeight; ++y) {
+    for (int x = 0; x < kExpandButtonWidth; ++x) {
+      PixelColor c = ToColor(0xffffff);
+      if (expand_button[y][x] == '@') {
+        c = ToColor(0x000000);
+      } else if (expand_button[y][x] == '$') {
+        c = ToColor(0x848484);
+      } else if (expand_button[y][x] == ':') {
+        c = ToColor(0xc6c6c6);
+      }
+      writer.Write({win_w - (5 + kCloseButtonWidth) - 3 - kExpandButtonWidth + x, 5 + y}, c);
+    }
+  }
 
   for (int y = 0; y < kCloseButtonHeight; ++y) {
     for (int x = 0; x < kCloseButtonWidth; ++x) {
