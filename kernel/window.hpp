@@ -15,6 +15,7 @@
 enum class WindowRegion {
   kTitleBar,
   kCloseButton,
+  kExpandButton,
   kBorder,
   kOther,
 };

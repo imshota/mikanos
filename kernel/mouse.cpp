@@ -95,6 +95,10 @@ namespace {
     msg.arg.window_close.layer_id = layer->ID();
     task_manager->SendMessage(task_id, msg);
   }
+
+  void SendExpandMessage() {
+
+  }
 }
 
 void DrawMouseCursor(PixelWriter* pixel_writer, Vector2D<int> position) {
@@ -130,6 +134,7 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
   layer_manager->Move(layer_id_, position_);
 
   unsigned int close_layer_id = 0;
+  unsigned int expand_layer_id = 0;
 
   const bool previous_left_pressed = (previous_buttons_ & 0x01);
   const bool left_pressed = (buttons & 0x01);
@@ -143,6 +148,9 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
         break;
       case WindowRegion::kCloseButton:
         close_layer_id = layer->ID();
+        break;
+      case WindowRegion::kExpandButton:
+        expand_layer_id = layer->ID();
         break;
       default:
         break;
@@ -161,6 +169,11 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
 
   if (drag_layer_id_ == 0) {
     if (close_layer_id == 0) {
+      SendMouseMessage(newpos, posdiff, buttons, previous_buttons_);
+    } else {
+      SendCloseMessage();
+    }
+    if (expand_layer_id == 0) {
       SendMouseMessage(newpos, posdiff, buttons, previous_buttons_);
     } else {
       SendCloseMessage();
